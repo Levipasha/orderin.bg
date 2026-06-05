@@ -1,0 +1,38 @@
+{
+  "name": "Orderin-backend",
+  "version": "1.0.0",
+  "description": "Production Express.js & MongoDB backend for Orderin Multi-Restaurant platform",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "db:wipe": "node scripts/wipeDatabase.js --confirm",
+    "db:seed-admin": "node scripts/ensureSuperAdmin.js"
+  },
+  "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
+    "bcryptjs": "^2.4.3",
+    "bullmq": "^5.76.10",
+    "cashfree-pg": "^6.0.4",
+    "cloudinary": "^2.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.2.0",
+    "ioredis": "^5.10.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.2.1",
+    "multer": "^1.4.5-lts.1",
+    "multer-storage-cloudinary": "^4.0.0",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.10",
+    "pdfkit": "^0.18.0",
+    "qrcode": "^1.5.3",
+    "razorpay": "^2.9.2",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
