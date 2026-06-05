@@ -398,17 +398,40 @@ router.post('/tables/:tableNo/qr', async (req, res) => {
     }
 
     const tableNo = req.params.tableNo;
-    const tableUrl = `${req.protocol}://${req.get('host')}/restaurant/${restaurant.slug}?table=${tableNo}`;
+    
+    // Determine frontend URL for the QR code:
+    // 1. Prioritize targetUrl from request body (sent by the frontend)
+    // 2. Extract origin from Origin or Referer header
+    // 3. Fallback to backend host request URL
+    let tableUrl = req.body.targetUrl;
+    
+    if (!tableUrl) {
+      const originHeader = req.headers.origin || req.headers.referer;
+      if (originHeader) {
+        try {
+          const parsedUrl = new URL(originHeader);
+          tableUrl = `${parsedUrl.protocol}//${parsedUrl.host}/restaurant/${restaurant.slug}?table=${tableNo}`;
+        } catch (e) {
+          // Ignore URL parsing errors
+        }
+      }
+    }
+    
+    if (!tableUrl) {
+      tableUrl = `${req.protocol}://${req.get('host')}/restaurant/${restaurant.slug}?table=${tableNo}`;
+    }
     
     // Generate QR base64
     const qrImage = await QRCode.toDataURL(tableUrl);
 
-    // Save table to restaurant array if it doesn't exist
-    const tableExists = restaurant.tables.find(t => t.tableNo === tableNo);
-    if (!tableExists) {
+    // Save table to restaurant array if it doesn't exist, otherwise update the existing one
+    const tableIndex = restaurant.tables.findIndex(t => t.tableNo === tableNo);
+    if (tableIndex === -1) {
       restaurant.tables.push({ tableNo, qrCodeUrl: qrImage });
-      await restaurant.save();
+    } else {
+      restaurant.tables[tableIndex].qrCodeUrl = qrImage;
     }
+    await restaurant.save();
 
     res.status(200).json({
       success: true,
