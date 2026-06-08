@@ -1,4 +1,3 @@
-/** Monthly Premium Pro price in INR. Set SUBSCRIPTION_MONTHLY_PRICE_INR=799 for production. */
-export const SUBSCRIPTION_MONTHLY_PRICE_INR = Number(process.env.SUBSCRIPTION_MONTHLY_PRICE_INR) || 799;
+/** Monthly Premium Pro price in INR — hardcoded to 799. */
+export const SUBSCRIPTION_MONTHLY_PRICE_INR = 799;
 export const SUBSCRIPTION_MONTHLY_PRICE_PAISE = Math.round(SUBSCRIPTION_MONTHLY_PRICE_INR * 100);
-
