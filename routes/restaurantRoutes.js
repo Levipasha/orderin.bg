@@ -82,31 +82,39 @@ router.get('/public/categories', async (req, res) => {
 router.get('/public/:slug', async (req, res) => {
   try {
     await checkAndExpireSubscriptions();
-    const restaurant = await Restaurant.findOne({ slug: req.params.slug.toLowerCase(), isActive: true });
+    const restaurant = await Restaurant.findOne({ slug: req.params.slug.toLowerCase() });
     if (!restaurant) {
-      return res.status(404).json({ success: false, error: 'Restaurant not found or is currently inactive' });
+      return res.status(404).json({ success: false, error: 'Restaurant not found' });
     }
     
-    // Fetch categories specific to this restaurant AND global categories
-    const categories = await Category.find({
-      $or: [
-        { restaurant: restaurant._id },
-        { restaurant: null } // global categories
-      ],
-      isActive: true
-    });
+    const isServiceActive = restaurant.isApproved && restaurant.isActive;
 
-    // Fetch active menus
-    const menus = await Menu.find({ restaurant: restaurant._id, isActive: true }).populate('category');
+    // Fetch categories specific to this restaurant AND global categories (only if approved and active)
+    const categories = isServiceActive
+      ? await Category.find({
+          $or: [
+            { restaurant: restaurant._id },
+            { restaurant: null } // global categories
+          ],
+          isActive: true
+        })
+      : [];
 
-    // Fetch active coupons specific to this restaurant AND global coupons
-    const coupons = await Coupon.find({
-      $or: [
-        { restaurant: restaurant._id },
-        { restaurant: null }
-      ],
-      isActive: true
-    });
+    // Fetch active menus (only if approved and active)
+    const menus = isServiceActive
+      ? await Menu.find({ restaurant: restaurant._id, isActive: true }).populate('category')
+      : [];
+
+    // Fetch active coupons specific to this restaurant AND global coupons (only if approved and active)
+    const coupons = isServiceActive
+      ? await Coupon.find({
+          $or: [
+            { restaurant: restaurant._id },
+            { restaurant: null }
+          ],
+          isActive: true
+        })
+      : [];
 
     res.status(200).json({
       success: true,
@@ -127,7 +135,7 @@ router.use(authorize('restaurant_admin', 'super_admin'));
 // @desc    Create/Update restaurant profile
 // @route   POST /api/restaurant/profile
 router.post('/profile', async (req, res) => {
-  const { name, slug, logo, banner, theme, timings, contact, settings, bankDetails, tagline, address, ownerName, email, phone, panNumber, gstNumber, subscriptionPlan, subscriptionExpiry, subscriptionActive } = req.body;
+  const { name, slug, logo, banner, theme, timings, contact, settings, bankDetails, tagline, address, pinCode, ownerName, email, phone, panNumber, gstNumber, fssaiNumber, subscriptionPlan, subscriptionExpiry, subscriptionActive } = req.body;
   try {
     let restaurant = await Restaurant.findOne({ owner: req.user._id });
     
@@ -143,11 +151,13 @@ router.post('/profile', async (req, res) => {
       bankDetails,
       tagline,
       address,
+      pinCode,
       ownerName,
       email,
       phone,
       panNumber,
       gstNumber,
+      fssaiNumber,
       subscriptionPlan,
       subscriptionExpiry,
       subscriptionActive

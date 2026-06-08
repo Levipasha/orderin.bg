@@ -56,7 +56,12 @@ router.post('/', redisRateLimiter('create-order-session', 15, 60), async (req, r
       subTotal += itemPrice * item.quantity;
     });
 
-    const gstAmount = Math.round((subTotal * (restaurant.settings.gstPercentage / 100)) * 100) / 100;
+    const cgstPercent = typeof restaurant.settings.cgstPercentage === 'number' ? restaurant.settings.cgstPercentage : (restaurant.settings.gstPercentage / 2);
+    const sgstPercent = typeof restaurant.settings.sgstPercentage === 'number' ? restaurant.settings.sgstPercentage : (restaurant.settings.gstPercentage / 2);
+    const cgstAmount = Math.round((subTotal * (cgstPercent / 100)) * 100) / 100;
+    const sgstAmount = Math.round((subTotal * (sgstPercent / 100)) * 100) / 100;
+    const gstAmount = cgstAmount + sgstAmount;
+    
     const deliveryCharge = (tableNo || ['scheduled', 'route', 'table'].includes(orderType)) ? 0 : restaurant.settings.deliveryCharge; // No delivery charge for self-pickups or tables!
     const totalAmount = subTotal + gstAmount + deliveryCharge;
 
@@ -69,6 +74,8 @@ router.post('/', redisRateLimiter('create-order-session', 15, 60), async (req, r
       tableNo: tableNo || '',
       subTotal,
       gstAmount,
+      cgstAmount,
+      sgstAmount,
       deliveryCharge,
       totalAmount,
       paymentMethod: paymentMethod || 'razorpay',
@@ -137,7 +144,7 @@ router.get('/public/queue/:restaurantSlug', async (req, res) => {
     const orders = await Order.find({
       restaurant: restaurant._id,
       orderStatus: { $in: ['placed', 'preparing', 'ready'] }
-    }).sort({ createdAt: 1 });
+    }).populate('items.menuItem', 'image').sort({ createdAt: 1 });
 
     res.status(200).json({
       success: true,
@@ -145,14 +152,22 @@ router.get('/public/queue/:restaurantSlug', async (req, res) => {
         _id: restaurant._id,
         name: restaurant.name,
         logo: restaurant.logo,
-        banner: restaurant.banner
+        banner: restaurant.banner,
+        theme: restaurant.theme,
+        isApproved: restaurant.isApproved,
+        isActive: restaurant.isActive,
+        subscriptionActive: restaurant.subscriptionActive
       },
       orders: orders.map(o => ({
         id: o._id,
         tableNo: o.tableNo,
         orderStatus: o.orderStatus,
         createdAt: o.createdAt,
-        items: (o.items || []).map(i => ({ name: i.name, quantity: i.quantity }))
+        items: (o.items || []).map(i => ({ 
+          name: i.name, 
+          quantity: i.quantity,
+          image: i.menuItem ? i.menuItem.image : null
+        }))
       }))
     });
   } catch (err) {
@@ -172,6 +187,7 @@ router.get('/customer/:phone', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 
 // Protected routes (Restaurant Admin / Restaurant Owner orders management)
 router.use(protect);

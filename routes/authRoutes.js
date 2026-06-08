@@ -132,4 +132,47 @@ router.get('/me', protect, async (req, res) => {
   });
 });
 
+// @desc    Sync Google Diner (customer) with MongoDB session
+// @route   POST /api/auth/google-diner
+router.post('/google-diner', async (req, res) => {
+  const { name, email, phone, photoURL } = req.body;
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  try {
+    let user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      // Create new customer user on MongoDB
+      const crypto = await import('crypto');
+      const dummyPassword = crypto.randomBytes(16).toString('hex');
+      user = await User.create({
+        name,
+        email: normalizedEmail,
+        password: dummyPassword,
+        role: 'customer',
+        phone: phone || ''
+      });
+    } else {
+      // Update phone if provided and not set
+      if (phone && !user.phone) {
+        user.phone = phone;
+        await user.save();
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      token: generateToken(user._id),
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        photoURL
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;

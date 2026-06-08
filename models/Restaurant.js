@@ -52,6 +52,8 @@ const RestaurantSchema = new mongoose.Schema({
   },
   settings: {
     gstPercentage: { type: Number, default: 5 },
+    cgstPercentage: { type: Number, default: 2.5 },
+    sgstPercentage: { type: Number, default: 2.5 },
     deliveryCharge: { type: Number, default: 30 },
     minimumOrderAmount: { type: Number, default: 99 }
   },
@@ -95,7 +97,15 @@ const RestaurantSchema = new mongoose.Schema({
     type: String,
     default: '' // Optional GST number
   },
+  fssaiNumber: {
+    type: String,
+    default: '' // FSSAI Food License Number
+  },
   address: {
+    type: String,
+    default: ''
+  },
+  pinCode: {
     type: String,
     default: ''
   },

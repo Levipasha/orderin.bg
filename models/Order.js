@@ -46,6 +46,14 @@ const OrderSchema = new mongoose.Schema({
     required: true,
     default: 0
   },
+  cgstAmount: {
+    type: Number,
+    default: 0
+  },
+  sgstAmount: {
+    type: Number,
+    default: 0
+  },
   deliveryCharge: {
     type: Number,
     required: true,
